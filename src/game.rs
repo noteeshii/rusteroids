@@ -41,6 +41,8 @@ impl Game {
     }
 
     pub fn draw(&self, d: &mut RaylibDrawHandle) {
+        d.clear_background(Color::BLACK);
+
         if self.state == State::LOOSE {
             d.draw_text(
                 "You lose!",

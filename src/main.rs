@@ -29,8 +29,6 @@ fn main() {
 
         let mut d = rl.begin_drawing(&thread);
 
-        d.clear_background(Color::BLACK);
-
         game.draw(&mut d);
     }
 }
