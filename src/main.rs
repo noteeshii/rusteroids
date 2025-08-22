@@ -25,9 +25,7 @@ fn main() {
     let mut game = Game::new();
 
     while !rl.window_should_close() {
-        game.handle_input(&rl);
-
-        game.update(&mut rng);
+        game.update(&rl, &mut rng);
 
         let mut d = rl.begin_drawing(&thread);
 

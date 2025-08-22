@@ -134,7 +134,9 @@ impl Game {
         return false;
     }
 
-    pub fn update(&mut self, rng: &mut ThreadRng) {
+    pub fn update(&mut self, rl: &RaylibHandle, rng: &mut ThreadRng) {
+        self.handle_input(rl);
+
         self.ship.moving();
 
         if self.state == State::LOOSE {
