@@ -43,7 +43,6 @@ impl AsteroidSize {
 
         match num {
             0 => AsteroidSize::LARGE,
-            1 => AsteroidSize::MEDIUM,
             2 => AsteroidSize::SMALL,
             _ => AsteroidSize::MEDIUM,
         }
@@ -122,23 +121,6 @@ impl Asteroid {
             self.position.y.rem_euclid(WINDOW_Y as f32),
         );
         self.rotation += self.size.rotation_scale() * 0.01;
-    }
-
-    pub fn check_collision(&self, point: Vector2) -> bool {
-        let len = self.points.len();
-
-        for i in 0..len {
-            let start = self.points[i]
-                .rotated(self.rotation)
-                .scale_by(self.size.size_scale())
-                .add(self.position);
-
-            if self.position.distance_to(point) <= self.position.distance_to(start) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     pub fn to_size(&self, size: AsteroidSize) -> Self {

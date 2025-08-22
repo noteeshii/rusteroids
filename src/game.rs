@@ -1,13 +1,23 @@
+use std::ops::Add;
+
 use rand::rngs::ThreadRng;
 use raylib::prelude::*;
 
-use crate::Asteroid;
-use crate::{Bullet, Ship};
+use crate::{Asteroid, Bullet, Ship};
+use crate::{WINDOW_X, WINDOW_Y};
+
+#[derive(PartialEq)]
+enum State {
+    LOOSE,
+    NONE,
+}
 
 pub struct Game {
-    pub ship: Ship,
-    pub asteroids: Vec<Asteroid>,
-    pub bullets: Vec<Bullet>,
+    ship: Ship,
+    asteroids: Vec<Asteroid>,
+    bullets: Vec<Bullet>,
+    state: State,
+    score: i32,
 }
 
 impl Game {
@@ -16,6 +26,8 @@ impl Game {
             ship: Ship::default(),
             asteroids: vec![],
             bullets: vec![],
+            state: State::NONE,
+            score: 0,
         }
     }
 
@@ -26,6 +38,25 @@ impl Game {
     }
 
     pub fn draw(&self, d: &mut RaylibDrawHandle) {
+        if self.state == State::LOOSE {
+            d.draw_text(
+                "You lose!",
+                (WINDOW_X / 2) - 95,
+                (WINDOW_Y / 2) - 40,
+                40,
+                Color::RED,
+            );
+            d.draw_text(
+                "Press `r` to restart",
+                (WINDOW_X / 2) - 110,
+                WINDOW_Y / 2,
+                20,
+                Color::WHITE,
+            );
+        }
+
+        d.draw_text(&format!("Score: {}", self.score), 10, 10, 15, Color::WHITE);
+
         self.ship.draw(d);
 
         for a in self.asteroids.iter() {
@@ -52,21 +83,73 @@ impl Game {
         if rl.is_key_pressed(KeyboardKey::KEY_SPACE) {
             self.bullets.push(self.ship.shoot());
         }
+        if rl.is_key_pressed(KeyboardKey::KEY_R) && self.state == State::LOOSE {
+            *self = Game::new();
+        }
     }
 
-    pub fn update(&mut self) {
+    fn collision_asteroid_with_bullet(asteroid: &Asteroid, bullet: &Bullet) -> bool {
+        let len = asteroid.points.len();
+
+        for i in 0..len {
+            let start = asteroid.points[i]
+                .rotated(asteroid.rotation)
+                .scale_by(asteroid.size.size_scale())
+                .add(asteroid.position);
+
+            if asteroid.position.distance_to(bullet.position)
+                <= asteroid.position.distance_to(start)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    fn collision_asteroid_with_ship(asteroid: &Asteroid, ship: &Ship) -> bool {
+        let len = asteroid.points.len();
+
+        for i in 0..len {
+            let start = asteroid.points[i]
+                .rotated(asteroid.rotation)
+                .scale_by(asteroid.size.size_scale())
+                .add(asteroid.position);
+
+            if asteroid.position.distance_to(ship.position) <= asteroid.position.distance_to(start)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    pub fn update(&mut self, rng: &mut ThreadRng) {
         self.ship.moving();
+
+        if self.state == State::LOOSE {
+            return;
+        }
+        if self.state == State::NONE && self.asteroids.is_empty() {
+            self.random_asteroids(5, rng);
+        }
 
         let mut a_is = Vec::new();
         let mut b_is = Vec::new();
 
         for a_i in 0..self.asteroids.len() {
-            let a = self.asteroids[a_i].clone();
+            let a = &self.asteroids[a_i];
+
+            if Game::collision_asteroid_with_ship(a, &self.ship) {
+                self.state = State::LOOSE;
+                break;
+            }
 
             for b_i in 0..self.bullets.len() {
-                let b = self.bullets[b_i].clone();
+                let b = &self.bullets[b_i];
 
-                if a.check_collision(b.position) {
+                if Game::collision_asteroid_with_bullet(a, b) {
                     a_is.push(a_i);
                     b_is.push(b_i);
                 }
@@ -75,6 +158,8 @@ impl Game {
 
         for i in a_is {
             let a = self.asteroids.remove(i);
+
+            self.score += 10 * a.size.rotation_scale() as i32;
 
             if let Some((l, r)) = a.destroy() {
                 self.asteroids.push(l);

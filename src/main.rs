@@ -23,12 +23,10 @@ fn main() {
 
     let mut game = Game::new();
 
-    game.random_asteroids(5, &mut rng);
-
     while !rl.window_should_close() {
         game.handle_input(&rl);
 
-        game.update();
+        game.update(&mut rng);
 
         let mut d = rl.begin_drawing(&thread);
 
