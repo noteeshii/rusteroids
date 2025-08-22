@@ -7,8 +7,8 @@ use crate::{WINDOW_X, WINDOW_Y};
 
 pub struct Ship {
     pub position: Vector2,
-    pub rotation: f32,
-    pub velocity: Vector2,
+    rotation: f32,
+    velocity: Vector2,
 }
 
 impl Ship {
@@ -68,10 +68,9 @@ impl Ship {
     }
 }
 
-#[derive(Clone)]
 pub struct Bullet {
     pub position: Vector2,
-    pub rotation: f32,
+    rotation: f32,
 }
 
 impl Bullet {

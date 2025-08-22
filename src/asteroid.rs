@@ -22,7 +22,7 @@ impl AsteroidSize {
         }
     }
 
-    pub fn speed_scale(&self) -> f32 {
+    fn speed_scale(&self) -> f32 {
         match self {
             AsteroidSize::LARGE => 0.5,
             AsteroidSize::MEDIUM => 1.,
@@ -38,7 +38,7 @@ impl AsteroidSize {
         }
     }
 
-    pub fn random(rng: &mut ThreadRng) -> Self {
+    fn random(rng: &mut ThreadRng) -> Self {
         let num = rng.random_range(0..3);
 
         match num {
@@ -54,7 +54,7 @@ pub struct Asteroid {
     pub size: AsteroidSize,
     pub position: Vector2,
     pub rotation: f32,
-    pub velocity: Vector2,
+    velocity: Vector2,
     pub points: Vec<Vector2>,
 }
 
@@ -123,7 +123,7 @@ impl Asteroid {
         self.rotation += self.size.rotation_scale() * 0.01;
     }
 
-    pub fn to_size(&self, size: AsteroidSize) -> Self {
+    fn to_size(&self, size: AsteroidSize) -> Self {
         Self {
             size,
             ..self.clone()

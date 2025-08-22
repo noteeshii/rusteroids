@@ -15,6 +15,7 @@ fn main() {
     let (mut rl, thread) = raylib::init()
         .size(WINDOW_X, WINDOW_Y)
         .title("rusteroids")
+        .log_level(TraceLogLevel::LOG_NONE)
         .build();
 
     rl.set_target_fps(60);

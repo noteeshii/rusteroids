@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::ops::Add;
 
 use rand::rngs::ThreadRng;
@@ -17,7 +18,8 @@ pub struct Game {
     asteroids: Vec<Asteroid>,
     bullets: Vec<Bullet>,
     state: State,
-    score: i32,
+    score: u32,
+    wave: u32,
 }
 
 impl Game {
@@ -28,10 +30,11 @@ impl Game {
             bullets: vec![],
             state: State::NONE,
             score: 0,
+            wave: 0,
         }
     }
 
-    pub fn random_asteroids(&mut self, count: i32, rng: &mut ThreadRng) {
+    fn random_asteroids(&mut self, count: u32, rng: &mut ThreadRng) {
         for _ in 0..count {
             self.asteroids.push(Asteroid::random(rng));
         }
@@ -56,6 +59,7 @@ impl Game {
         }
 
         d.draw_text(&format!("Score: {}", self.score), 10, 10, 15, Color::WHITE);
+        d.draw_text(&format!("Wave: {}", self.wave), 10, 25, 15, Color::WHITE);
 
         self.ship.draw(d);
 
@@ -68,6 +72,14 @@ impl Game {
     }
 
     pub fn handle_input(&mut self, rl: &RaylibHandle) {
+        if self.state == State::LOOSE {
+            if rl.is_key_pressed(KeyboardKey::KEY_R) {
+                *self = Game::new();
+            }
+
+            return;
+        }
+
         if rl.is_key_down(KeyboardKey::KEY_A) {
             self.ship.rotate_by(-0.1);
         } else if rl.is_key_down(KeyboardKey::KEY_D) {
@@ -82,9 +94,6 @@ impl Game {
         }
         if rl.is_key_pressed(KeyboardKey::KEY_SPACE) {
             self.bullets.push(self.ship.shoot());
-        }
-        if rl.is_key_pressed(KeyboardKey::KEY_R) && self.state == State::LOOSE {
-            *self = Game::new();
         }
     }
 
@@ -132,50 +141,46 @@ impl Game {
             return;
         }
         if self.state == State::NONE && self.asteroids.is_empty() {
-            self.random_asteroids(5, rng);
+            self.random_asteroids(self.wave + 5, rng);
+            self.wave += 1;
         }
 
-        let mut a_is = Vec::new();
-        let mut b_is = Vec::new();
+        let mut asteroid_indexes = HashSet::new();
+        let mut bullet_indexes = HashSet::new();
 
-        for a_i in 0..self.asteroids.len() {
-            let a = &self.asteroids[a_i];
+        for asteroid_idx in 0..self.asteroids.len() {
+            let asteroid = &self.asteroids[asteroid_idx];
 
-            if Game::collision_asteroid_with_ship(a, &self.ship) {
+            if Game::collision_asteroid_with_ship(asteroid, &self.ship) {
                 self.state = State::LOOSE;
                 break;
             }
 
-            for b_i in 0..self.bullets.len() {
-                let b = &self.bullets[b_i];
+            for bullet_idx in 0..self.bullets.len() {
+                let bullet = &self.bullets[bullet_idx];
 
-                if Game::collision_asteroid_with_bullet(a, b) {
-                    a_is.push(a_i);
-                    b_is.push(b_i);
+                if Game::collision_asteroid_with_bullet(asteroid, bullet) {
+                    asteroid_indexes.insert(asteroid_idx);
+                    bullet_indexes.insert(bullet_idx);
                 }
             }
         }
 
-        for i in a_is {
+        for i in asteroid_indexes {
             let a = self.asteroids.remove(i);
 
-            self.score += 10 * a.size.rotation_scale() as i32;
+            self.score += 10 * a.size.rotation_scale() as u32;
 
             if let Some((l, r)) = a.destroy() {
                 self.asteroids.push(l);
                 self.asteroids.push(r);
             }
         }
-        for i in b_is {
+        for i in bullet_indexes {
             self.bullets.remove(i);
         }
 
-        self.bullets = self
-            .bullets
-            .clone()
-            .into_iter()
-            .filter(|b| !b.is_out())
-            .collect();
+        self.bullets.retain(|b| !b.is_out());
 
         for a in self.asteroids.iter_mut() {
             a.moving();
